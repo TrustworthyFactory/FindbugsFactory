@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -26,6 +27,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
@@ -79,6 +81,23 @@ public class FindbugsUtil extends AuditToolUtil{
 		pathConverter = new HashMap<>();
 
 	}
+	
+	public static File resolveFile(String path,Bundle bundle) throws IOException {
+		  File file=null;
+		  if (bundle != null) {
+		    URL url=FileLocator.find(bundle,new Path(path),Collections.emptyMap());
+		    if (url != null) {
+		      URL fileUrl=FileLocator.toFileURL(url);
+		      try {
+		        file=new File(fileUrl.toURI());
+		      }
+		 catch (      URISyntaxException e) {
+		        e.printStackTrace();
+		      }
+		    }
+		  }
+		  return file;
+		}
 
 	private void runSpecificAudit(String metric, String projectType){
 
@@ -120,11 +139,15 @@ public class FindbugsUtil extends AuditToolUtil{
 					URL fileURL = bundle.getEntry("resources/FindBugsException.xml");
 					String file = null;
 					try {
-						file = new File(FileLocator.resolve(fileURL).getFile()).getAbsolutePath();
+						file = new File(FileLocator.resolve(fileURL).getFile()).toString();
 						System.out.println("FindBugsReliability path " + file);
 					} catch (IOException e1) {
 						e1.printStackTrace();
 					}
+					
+					if (file==null)
+						file= FindbugsUtil.resolveFile("resources/FindBugsException.xml", bundle).toString();
+					
 					map.put(file, true);
 					OptetDataModel.getInstance().configureRulesMetric(metric, 9);
 
@@ -152,6 +175,9 @@ public class FindbugsUtil extends AuditToolUtil{
 					} catch (IOException e1) {
 						e1.printStackTrace();
 					}
+					if (file==null)
+						file= FindbugsUtil.resolveFile("resources/FindBugsExceptionAndroid.xml", bundle).getAbsolutePath();
+
 					map.put(file, true);
 					OptetDataModel.getInstance().configureRulesMetric(metric, 9);
 
